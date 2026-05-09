@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>🍔 Staff Order</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+          font-family: Arial;
+          background: #f2f2f2;
+          padding: 20px;
+        }
+        
+        .box {
+          max-width: 400px;
+          margin: auto;
+          background: white;
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        input, select, button {
+          width: 100%;
+          padding: 12px;
+          margin-top: 10px;
+          font-size: 16px;
+        }
+        
+        button {
+          background: black;
+          color: white;
+          border: none;
+          border-radius: 5px;
+        }
+        
+        button:active {
+          transform: scale(0.98);
+        }
+        
+        h2 {
+          text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="box">
+
+        <h2>🧑‍🍳 Staff Order</h2>
+
+        <!-- 🪑 桌号 -->
+        <input id="table" placeholder="Table number (e.g. 1, 2, 3)">
+
+        <!-- 🍔 菜单 -->
+        <select id="item">
+            <option value="Coke">🥤 Coke</option>
+            <option value="Tea">🍵 Teh Tarik</option>
+            <option value="Burger">🍔 Burger</option>
+            <option value="Fries">🍟 Fries</option>
+        </select>
+
+        <!-- 🔢 数量 -->
+        <input id="qty" type="number" value="1" min="1">
+
+        <!-- 📤 提交 -->
+        <button onclick="sendOrder()">Send Order</button>
+
+        <p id="msg"></p>
+
+    </div>
+
+    <!-- 🔥 Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        // 🔑 Firebase config（你的）
+        const firebaseConfig = {
+          apiKey: "AIzaSyBNk0S-ArNKrK_fmUZJb6K2U2252rT5FNU",
+          authDomain: "restaurant-app-bc3c1.firebaseapp.com",
+          projectId: "restaurant-app-bc3c1",
+          storageBucket: "restaurant-app-bc3c1.firebasestorage.app",
+          messagingSenderId: "25868708085",
+          appId: "1:25868708085:web:5585774b7ede6ecd127dbc"
+        };
+        
+        // 初始化
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // 🍔 发送订单
+        window.sendOrder = async function () {
+        
+          const table = document.getElementById("table").value;
+          const item = document.getElementById("item").value;
+          const qty = document.getElementById("qty").value;
+        
+          if (!table) {
+            alert("请输入桌号");
+            return;
+          }
+        
+          await addDoc(collection(db, "orders"), {
+            table: table,
+            item: item,
+            qty: Number(qty),
+            time: Date.now()
+          });
+        
+          document.getElementById("msg").innerText = "✅ Order Sent!";
+        
+          document.getElementById("table").value = "";
+          document.getElementById("qty").value = 1;
+        };
+        
+    </script>
+
+</body>
+
+</html>
