@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EMPLOYEE-SYSTEM PRO</title>
+    <style>
+        :root { --bg: #ffffff; --text: #000000; --card: #f4f4f4; --border: #e5e5e5; --accent: #ff3b30; --radius: 14px; --transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1); --success: #34c759; --warning: #ff9500; }  
+        [data-theme="dark"] { --bg: #000000; --text: #ffffff; --card: #1a1a1a; --border: #333333; }  
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }  
+        body.modal-open { position: fixed; width: 100%; height: 100%; overflow: hidden !important; }
+        input, textarea { user-select: text !important; -webkit-user-select: text !important; pointer-events: auto !important; }
+        body { user-select: none; -webkit-user-select: none; background: var(--bg); color: var(--text); padding-bottom: 120px; transition: 0.3s; min-height: 100vh; overflow-x: hidden; width: 100%; margin: 0; display: flex; flex-direction: column; align-items: center; }  
+        .app-container { width: 100%; max-width: 950px; position: relative; }
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center; z-index: 40000; backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); opacity: 0; pointer-events: none; visibility: hidden; transition: opacity 0.4s cubic-bezier(0.15, 1, 0.3, 1), visibility 0.4s step-end, backdrop-filter 0.4s cubic-bezier(0.15, 1, 0.3, 1); }  
+        .modal-overlay.show { opacity: 1; pointer-events: auto; visibility: visible; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); transition: opacity 0.4s cubic-bezier(0.15, 1, 0.3, 1), visibility 0s, backdrop-filter 0.4s cubic-bezier(0.15, 1, 0.3, 1); }
+        .modal-box { background: var(--bg); width: 88%; max-width: 320px; max-height: 92vh; padding: 15px 22px 25px; border-radius: 32px; text-align: center; border: 1px solid var(--border); box-shadow: 0 25px 60px rgba(0,0,0,0.12); display: flex; flex-direction: column; will-change: transform, opacity, filter; transform-style: preserve-3d; backface-visibility: hidden; transform: scale(0.9) translateY(40px); opacity: 0; filter: blur(5px); transition: transform 0.4s cubic-bezier(0.15, 1, 0.3, 1), opacity 0.32s cubic-bezier(0.15, 1, 0.3, 1), filter 0.35s cubic-bezier(0.15, 1, 0.3, 1); }  
+        .modal-overlay.show .modal-box { transform: scale(1) translateY(0); opacity: 1; filter: blur(0px); transition: transform 0.42s cubic-bezier(0.15, 1, 0.3, 1), opacity 0.38s cubic-bezier(0.15, 1, 0.3, 1), filter 0.38s cubic-bezier(0.15, 1, 0.3, 1); }
+        .modal-content { flex: 1; overflow-y: auto; scrollbar-width: none; margin-bottom: 10px; }
+        .modal-content::-webkit-scrollbar { display: none; }
+        .modal-header-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 0; margin-bottom: 12px; width: 100%; }
+        #warnIconSlot svg { width: 22px; height: 22px; flex-shrink: 0; }
+        #modalMsg { font-weight: 800; font-size: 16px; line-height: 1.4; color: var(--text); margin: 0; }
+        #modalIconArea { margin-bottom: 10px; display: flex; align-items: center; justify-content: center; min-height: 80px; }
+        #modalIconArea:empty { display: none; }
+        .modal-btn-row { display: flex; gap: 10px; margin-top: auto; width: 100%; }  
+        .m-btn { flex: 1; height: 50px; border-radius: 15px; border: none; font-weight: 800; cursor: pointer; font-size: 14px; transition: 0.2s; padding: 0 18px; }  
+        .m-btn:active { transform: scale(0.96); }
+        .m-btn-black { background: var(--text); color: var(--bg); }  
+        .m-btn-gray { background: var(--card); color: var(--text); }  
+        .dining-selector { display: flex; gap: 8px; margin-bottom: 15px; }
+        .dining-btn { flex: 1; padding: 12px; border-radius: 18px; background: var(--card); border: 2px solid transparent; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+        .dining-btn.active { border-color: var(--text); background: var(--bg); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .dining-btn svg { width: 26px; height: 26px; fill: none; stroke: var(--text); stroke-width: 2.2; }
+        .dining-btn small { font-size: 10px; font-weight: 800; }
+        .switcher { background: var(--card); padding: 4px; border-radius: 12px; display: flex; position: relative; height: 42px; margin-bottom: 12px; align-items: center; isolation: isolate; }  
+        .sw-btn { flex: 1; z-index: 2; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #888; cursor: pointer; height: 100%; position: relative; transition: 0.3s; }  
+        .sw-btn.active { color: var(--bg) !important; } 
+        .sw-slider { position: absolute; top: 4px; bottom: 4px; background: var(--text); border-radius: 10px; transition: var(--transition); z-index: 1; pointer-events: none; }
+        .header { padding: 30px 20px 15px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); background: var(--bg); width: 100%; position: relative; z-index: 1000; }  
+        .time-display { font-size: 34px; font-weight: 900; line-height: 1; letter-spacing: -1.5px; }  
+        .time-colon { display: inline-block; transform: translateY(-0.07em); margin: 0 1px; }
+        .date-display { font-size: 11px; font-weight: 800; opacity: 0.4; margin-top: 6px; }  
+        .table-card { background: var(--text); color: var(--bg); padding: 8px 12px; border-radius: 10px; text-align: center; cursor: pointer; position: relative; z-index: 2000; transition: transform 0.2s; }  
+        .table-card:active { transform: scale(0.95); }
+        .table-input { background: transparent; border: none; color: inherit; font-size: 22px; font-weight: bold; width: 55px; text-align: center; outline: none; -webkit-appearance: none; }  
+        .swipe-container { position: relative; overflow: hidden; border-radius: 12px; margin-bottom: 10px; background: var(--accent); width: 100%; }  
+        .swipe-body { background: var(--card); padding: 15px; display: flex; align-items: center; gap: 12px; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; z-index: 5; min-height: 80px; border-radius: 12px; }  
+        .swipe-del-btn { position: absolute; right: 0; top: 0; width: 80px; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 900; z-index: 1; cursor: pointer; }  
+        .swipe-del-btn:active { background: #d00000; }
+        .swipe-info-box { flex: 1; min-width: 0; overflow: hidden; text-align: left; } 
+        .swipe-title { font-weight: 700; font-size: 14px; color: var(--text); overflow-wrap: break-word; word-break: normal; line-height: 1.3; }
+        .swipe-body.is-completed { background: #d0d0d0 !important; color: #000000 !important; }
+        .swipe-body.is-completed .swipe-title { color: #000000 !important; }
+        .swipe-body.is-completed div { color: #000000 !important; }
+        .swipe-body.is-completed .status-btn { background: #000 !important; color: #fff !important; opacity: 1 !important; z-index: 10; }
+        .status-btn { background: var(--text); color: var(--bg); border: none; padding: 10px; border-radius: 10px; font-size: 10px; font-weight: 900; width: 85px; flex-shrink: 0; cursor: pointer; transition: 0.3s; }  
+        .page { display: none; padding: 0 20px; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); width: 100%; }  
+        .page.active { display: block; }  
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; width: 100%; }  
+        @media (min-width: 600px) { .menu-grid { grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); } }
+        .drink-card { background: var(--card); border-radius: 16px; padding: 12px 6px; text-align: center; cursor: pointer; opacity: 0; transform: translateY(20px) scale(0.96); transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease; will-change: transform, opacity; }
+        .drink-card:active { transform: scale(0.95); }
+        .drink-card.revealed { opacity: 1; transform: translateY(0) scale(1); }
+        .drink-img { width: 100%; aspect-ratio: 1/1; background: #eee; border-radius: 12px; margin-bottom: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }  
+        .drink-img img { width: 100%; height: 100%; object-fit: cover; }  
+        .nav-dock { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 450px; height: 72px; background: var(--bg); border: 2px solid var(--text); border-radius: 24px; display: flex; align-items: center; z-index: 1000; padding: 0 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }  
+        .nav-indicator { position: absolute; top: 6px; left: 6px; width: calc(33.33% - 4.5px); height: 58px; background: var(--text); border-radius: 18px; transition: var(--transition); z-index: 1; pointer-events: none; }  
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; color: #aaa; cursor: pointer; position: relative; height: 100%; background: none; border: none; outline: none; }  
+        .nav-item.active { color: var(--bg); }  
+        .nav-item svg { width: 26px; height: 26px; fill: currentColor; margin-bottom: 2px; }  
+        .nav-item span { font-size: 10px; font-weight: 800; }
+        .badge { position: absolute; top: 8px; right: 20%; background: var(--accent); color: white; padding: 2px 5px; border-radius: 10px; font-size: 9px; font-weight: 900; border: 2px solid var(--bg); min-width: 18px; z-index: 15; }  
+        .admin-entry { display: flex; align-items: center; justify-content: space-between; padding: 20px; background: var(--card); border-radius: 16px; margin-top: 25px; cursor: pointer; width: 100%; }
+        #managePage { position: fixed; top: 0; left: 50%; transform: translateX(100%); width: 100%; max-width: 1000px; height: 100%; background: var(--bg); z-index: 30000 !important; padding: 40px 20px; overflow-y: auto; transition: var(--transition); box-shadow: -10px 0 30px rgba(0,0,0,0.1); }  
+        #managePage.show { transform: translateX(-50%); } 
+        #adminDrinkList { position: relative; }
+        .admin-item { display: flex; align-items: center; padding: 12px; background: var(--card); border-radius: 14px; margin-bottom: 10px; gap: 12px; width: 100%; border: 1px solid var(--border); transition: background 0.2s, opacity 0.2s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s; will-change: transform, box-shadow; }
+        .admin-item.dragging { opacity: 0.9; background: var(--bg); border: 1.5px solid var(--text); box-shadow: 0 15px 35px rgba(0,0,0,0.166); transform: scale(1.03) translateY(-3px); z-index: 9999; pointer-events: none; }
+        .drag-handle { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; cursor: grab; font-size: 18px; color: #888; border-radius: 8px; user-select: none; -webkit-user-select: none; transition: background 0.2s, color 0.2s; }
+        .drag-handle:hover { background: var(--border); color: var(--text); }
+        .drag-handle:active { cursor: grabbing; }
+        .admin-info { flex: 1; min-width: 0; text-align: left; }
+        .m-action-row { display: flex; gap: 8px; margin-left: auto; flex-shrink: 0; align-items: center; }
+        .edit-x-btn { background: var(--card); color: var(--text); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; transition: transform 0.2s, background 0.2s, border-color 0.2s; }
+        .edit-x-btn:hover { border-color: var(--text); }
+        .edit-x-btn:active { transform: scale(0.9); background: var(--border); }
+        .edit-x-btn svg { width: 18px; height: 18px; stroke: var(--text); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        .del-x-btn { background: #fee; color: #ff3b30; width: 38px; height: 38px; border-radius: 10px; cursor: pointer; border: 1px solid #ffcccc; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, background 0.2s, border-color 0.2s; }
+        .del-x-btn:hover { border-color: #ff3b30; }
+        .del-x-btn:active { transform: scale(0.9); background: #fdd; }
+        .del-x-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        #editLogoContainer { width: 90px; height: 90px; border-radius: 24px; background: var(--card); border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: inset 0 2px 8px rgba(0,0,0,0.05); position: relative; transition: border-color 0.2s, background 0.2s; }
+        #editLogoContainer:hover { border-color: var(--text); background: var(--border); }
+        #toastContainer { position: fixed; top: 45px; left: 0; width: 100%; height: 60px; pointer-events: none; z-index: 100000; }
+        .k-toast { position: absolute; top: 0; left: 50%; width: max-content; max-width: 90%; background: rgba(255, 255, 255, 0.85); color: #000000; padding: 10px 18px; border-radius: var(--radius); font-size: 13px; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: center; gap: 8px; border: none !important; opacity: 0; transform: translate(-50%, -100px) scale(0.85); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s, z-index 0.22s; pointer-events: auto; will-change: transform, opacity; }
+        [data-theme="dark"] .k-toast { background: rgba(20, 20, 20, 0.75) !important; color: #ffffff !important; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        .toast-check-svg { width: 16px; height: 16px; stroke: var(--success); stroke-width: 3.5; fill: none; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+        .k-toast.stack-0 { opacity: 1; transform: translate(-50%, 0) scale(1); z-index: 100; }
+        .k-toast.stack-1 { opacity: 0.7; transform: translate(-50%, -12px) scale(0.94); z-index: 90; }
+        .k-toast.stack-2 { opacity: 0.35; transform: translate(-50%, -24px) scale(0.88); z-index: 80; }
+        .k-toast.exit-up { opacity: 0 !important; transform: translate(-50%, -100px) scale(0.82) !important; transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1); } 
+    </style>
+</head>
+
+<body>
+
+    <div id="toastContainer"></div>
+
+    <div class="app-container">
+
+        <!-- 定制规格弹窗 -->
+        <div id="optionModal" class="modal-overlay">
+            <div class="modal-box">
+                <h3 id="optDrinkName" style="font-weight:900; font-size:22px; margin-bottom:5px;"></h3>
+                <div id="optPriceDisplay" style="font-size:18px; font-weight:900; color:var(--accent); margin-bottom:15px;">RM 0.00</div>
+
+                <div class="modal-content">
+                    <p style="font-size:10px; font-weight:800; color:#aaa; margin-bottom:10px;" data-i18n="dining_mode">用餐方式 DINING</p>
+                    <div class="dining-selector">
+                        <div class="dining-btn active" id="btnDineIn" onclick="window.setDiningUI('dine_in')">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M3 10l9-7 9 7M5 10v10a1 1 0 001 1h12a1 1 0 001-1V10M9 21v-7h6v7" />
+                            </svg>
+                            <small data-i18n="dine_in">堂食</small>
+                        </div>
+                        <div class="dining-btn" id="btnTakeaway" onclick="window.setDiningUI('takeaway')">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M6 8V7a6 6 0 1112 0v1M4 8h16l1 12H3L4 8z" />
+                            </svg>
+                            <small data-i18n="takeaway">外带</small>
+                        </div>
+                    </div>
+
+                    <p style="font-size:10px; font-weight:800; color:#aaa; margin-bottom:5px;" data-i18n="taste">浓度 TASTE</p>
+                    <div class="switcher" id="tasteSwitch">
+                        <div class="sw-slider"></div>
+                        <div class="sw-btn active" onclick="window.setOptUI(this, 0)" data-i18n="normal">正常</div>
+                        <div class="sw-btn" onclick="window.setOptUI(this, 1)" data-i18n="gau">厚(Gau)</div>
+                        <div class="sw-btn" onclick="window.setOptUI(this, 2)" data-i18n="po">薄(Po)</div>
+                    </div>
+
+                    <p style="font-size:10px; font-weight:800; color:#aaa; margin-bottom:5px;" data-i18n="sugar_set">糖分 SUGAR</p>
+                    <div class="switcher" id="sugarSwitch">
+                        <div class="sw-slider"></div>
+                        <div class="sw-btn active" onclick="window.setOptUI(this, 0)" data-i18n="normal">正常</div>
+                        <div class="sw-btn" onclick="window.setOptUI(this, 1)" data-i18n="less_sugar">少糖</div>
+                        <div class="sw-btn" onclick="window.setOptUI(this, 2)" data-i18n="no_sugar">无糖</div>
+                    </div>
+
+                    <p style="font-size:10px; font-weight:800; color:#aaa; margin-bottom:5px;" data-i18n="size_set">分量 SIZE</p>
+                    <div class="switcher" id="sizeSwitch">
+                        <div class="sw-slider"></div>
+                        <div class="sw-btn" onclick="window.changeSize(this, 0)" data-i18n="big_cup">大杯</div>
+                        <div class="sw-btn active" onclick="window.changeSize(this, 1)" data-i18n="small_cup">小杯</div>
+                        <div class="sw-btn" onclick="window.changeSize(this, 2)" data-i18n="mini_cup">最小杯</div>
+                    </div>
+
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:var(--card); padding:8px; border-radius:35px; width:150px; margin:20px auto;">
+                        <button class="m-btn-black" style="width:40px;height:40px;border-radius:50%;border:none;font-size:20px;cursor:pointer;" onclick="window.changeQty(-1)">−</button>
+                        <span id="qtyVal" style="font-size:22px; font-weight:900;">1</span>
+                        <button class="m-btn-black" style="width:40px;height:40px;border-radius:50%;border:none;font-size:20px;cursor:pointer;" onclick="window.changeQty(1)">+</button>
+                    </div>
+                    <input type="text" id="customRem" style="width:100%; padding:15px; background:var(--card); border:none; border-radius:14px; font-size:13px; font-weight:600; outline:none;" data-i18n-ph="remark_ph" placeholder="备注...">
+                </div>
+                <div class="modal-btn-row">
+                    <button class="m-btn m-btn-gray" onclick="window.closeOpt()" data-i18n="cancel">取消</button>
+                    <button class="m-btn m-btn-black" onclick="window.confirmAdd()" data-i18n="confirm">确定</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑饮品弹窗 -->
+        <div id="editModal" class="modal-overlay">
+            <div class="modal-box">
+                <h3 style="font-weight:900; font-size:22px; margin-bottom:15px;" data-i18n="edit_title">编辑饮品</h3>
+                <div class="modal-content">
+                    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
+                        <div id="editLogoContainer">
+                            <img id="editLogoImg" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                            <div id="editLogoPlaceholder" style="display: flex; flex-direction: column; align-items: center; gap: 4px; color: #888;">
+                                <svg viewBox="0 0 24 24" style="width: 28px; height: 28px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round;">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                    <circle cx="8.5" cy="8.5" r="1.5" />
+                                    <polyline points="21 15 16 10 5 21" />
+                                </svg>
+                                <span style="font-size: 9px; font-weight: 800; opacity: 0.7;">ADD IMAGE</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 🎨 Emoji + 选择图片并排 (Flex 垂直等高对齐且文字居中) -->
+                    <div style="display:flex; gap:10px; margin-bottom:15px; align-items:stretch;">
+                        <label for="editFileInp" id="editFileLabel" style="flex:1; margin-bottom:0; display:flex; align-items:center; justify-content:center; background:var(--text); color:var(--bg); border-radius:10px; font-size:12px; font-weight:900; cursor:pointer;" data-i18n="select_file">选择图片</label>
+                        <input type="file" id="editFileInp" accept="image/*" style="display:none;">
+                        <input type="text" id="editEmoji" placeholder="🥤" style="width:60px; padding:10px; border-radius:10px; border:1px solid #ddd; outline:none; background:var(--bg); color:var(--text); font-size:20px; text-align:center; font-weight:600;" maxlength="2">
+                    </div>
+
+                    <input type="text" id="editName" data-i18n-ph="name_ph" placeholder="名称" style="width:100%; padding:15px; border-radius:10px; border:1px solid #ddd; margin-bottom:12px; outline:none; background:var(--bg); color:var(--text); font-weight:600;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:15px; text-align:left;">
+                        <div><small style="font-size:9px; opacity:0.5;" data-i18n="big_cup">大杯</small><input type="number" id="editPBig" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; outline:none; background:var(--bg); color:var(--text); font-size:14px;"></div>
+                        <div><small style="font-size:9px; opacity:0.5;" data-i18n="small_cup">小杯</small><input type="number" id="editPSmall" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; outline:none; background:var(--bg); color:var(--text); font-size:14px;"></div>
+                        <div><small style="font-size:9px; opacity:0.5;" data-i18n="mini_cup">最小杯</small><input type="number" id="editPMini" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; outline:none; background:var(--bg); color:var(--text); font-size:14px;"></div>
+                    </div>
+                </div>
+                <div class="modal-btn-row">
+                    <button class="m-btn m-btn-gray" onclick="window.closeEdit()" data-i18n="cancel">取消</button>
+                    <button class="m-btn m-btn-black" id="saveEditBtn" onclick="window.saveEditDrink()" data-i18n="confirm">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 通用提示弹窗 -->
+        <div id="modalOverlay" class="modal-overlay">
+            <div id="modalBox" class="modal-box">
+                <div id="modalIconArea"></div>
+                <div class="modal-header-row">
+                    <div id="warnIconSlot"></div>
+                    <p id="modalMsg"></p>
+                </div>
+                <div class="modal-btn-row" id="modalBtns"></div>
+            </div>
+        </div>
+
+        <div class="header">
+            <div class="header-left">
+                <div style="font-size:10px; font-weight:900; opacity:0.4;">EMPLOYEE-SYSTEM</div>
+                <div class="time-display" id="liveClock">--:--</div>
+                <div class="date-display" id="liveDate">----/--/--</div>
+            </div>
+            <div class="table-card" onclick="document.getElementById('tableNum').focus()">
+                <small data-i18n="table">桌号 TABLE</small>
+                <input type="number" id="tableNum" class="table-input" placeholder="01" onclick="event.stopPropagation()">
+            </div>
+        </div>
+
+        <div id="homePage" class="page active">
+            <div style="padding:15px 0;">
+                <div style="background:var(--card); padding:12px 18px; border-radius:16px; display:flex; align-items:center; gap:10px;">
+                    <svg style="width:18px; height:18px; stroke:var(--text); fill:none; stroke-width:2.5; opacity:0.3;" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="7" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input type="text" id="searchInp" oninput="window.filterMenu()" style="background:transparent; border:none; width:100%; outline:none; font-size:14px; font-weight:600;" data-i18n-ph="search_ph" placeholder="搜索饮品...">
+                </div>
+            </div>
+            <div class="menu-grid" id="menuGrid"></div>
+        </div>
+
+        <div id="cartPage" class="page">
+            <h3 style="font-size:11px; margin: 15px 0; opacity:0.5;" data-i18n="nav_cart">购物车 CART</h3>
+            <div id="draftList"></div>
+            <div id="cartSummary" style="display:none; margin-top:20px; background:var(--text); color:var(--bg); padding:22px; border-radius:18px; justify-content:space-between; align-items:center;">
+                <div>
+                    <p style="font-size:9px; opacity:0.6;" data-i18n="total">总计</p>
+                    <div id="totalPriceDisplay" style="font-size:24px; font-weight:900;">RM 0.00</div>
+                </div>
+                <button onclick="window.submitOrder()" style="background:var(--bg); color:var(--text); border:none; padding:12px 22px; border-radius:12px; font-weight:900;" data-i18n="send">发送订单</button>
+            </div>
+            <h3 style="font-size:11px; margin: 40px 0 15px; opacity:0.5;" data-i18n="history">历史记录 HISTORY</h3>
+            <div id="historyList"></div>
+        </div>
+
+        <div id="settingsPage" class="page">
+            <h3 style="font-size:11px; opacity:0.6; margin: 15px 0 8px;" data-i18n="theme_set">主题模式 THEME</h3>
+            <div class="switcher" id="themeSwitch">
+                <div class="sw-slider"></div>
+                <div class="sw-btn active" onclick="window.setTheme('auto', 0)" data-i18n="auto">自动</div>
+                <div class="sw-btn" onclick="window.setTheme('light', 1)" data-i18n="light">亮色</div>
+                <div class="sw-btn" onclick="window.setTheme('dark', 2)" data-i18n="dark">深色</div>
+            </div>
+            <h3 style="font-size:11px; opacity:0.6; margin: 15px 0 8px;" data-i18n="lang_set">语言 LANGUAGE</h3>
+            <div class="switcher" id="langSwitch">
+                <div class="sw-slider"></div>
+                <div class="sw-btn active" onclick="window.setLang('zh', 0)">中文</div>
+                <div class="sw-btn" onclick="window.setLang('en', 1)">ENGLISH</div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div>
+                    <h3 style="font-size:10px; opacity:0.6; margin-bottom:5px;" data-i18n="time_fmt">时间格式</h3>
+                    <div class="switcher" id="timeSwitch_ctrl">
+                        <div class="sw-slider"></div>
+                        <div class="sw-btn active" onclick="window.setTimeFmt('12h', 0)">12H</div>
+                        <div class="sw-btn" onclick="window.setTimeFmt('24h', 1)">24H</div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="font-size:10px; opacity:0.6; margin-bottom:5px;" data-i18n="date_fmt">日期格式</h3>
+                    <div class="switcher" id="dateSwitch_ctrl">
+                        <div class="sw-slider"></div>
+                        <div class="sw-btn active" onclick="window.setDateFmt('YMD', 0)">YMD</div>
+                        <div class="sw-btn" onclick="window.setDateFmt('DMY', 1)">DMY</div>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-entry" onclick="window.toggleManage(true)">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="background:#fff; width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; border:1px solid #eee; font-size:20px;">🥤</div>
+                    <span data-i18n="manage" style="font-weight:800; font-size:15px;">菜单管理 (增/删)</span>
+                </div>
+                <span style="opacity:0.3; font-size:20px;">›</span>
+            </div>
+        </div>
+
+        <!-- 管理页 -->
+        <div id="managePage">
+            <svg style="width:30px; stroke:var(--text); stroke-width:2.5; fill:none; margin-bottom:20px; cursor:pointer;" viewBox="0 0 24 24" onclick="window.toggleManage(false)">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            <h2 style="font-size:24px; font-weight:900; margin-bottom:20px;" data-i18n="manage_title">管理云端菜单</h2>
+            <div style="background:var(--card); padding:20px; border-radius:20px; margin-bottom:25px;">
+
+                <!-- 🎨 Emoji + 选择图片并排 (Flex 垂直等高对齐且文字居中) -->
+                <div style="display:flex; gap:10px; margin-bottom:15px; align-items:stretch;">
+                    <label for="fileInp" id="fileLabel" style="flex:1; margin-bottom:0; display:flex; align-items:center; justify-content:center; background:var(--text); color:var(--bg); border-radius:10px; font-size:12px; font-weight:900; cursor:pointer;" data-i18n="select_file">选择图片</label>
+                    <input type="file" id="fileInp" accept="image/*" style="display:none;">
+                    <input type="text" id="addEmoji" placeholder="🥤" style="width:60px; padding:12px; border-radius:10px; border:1px solid #ddd; outline:none; background:var(--bg); color:var(--text); font-size:20px; text-align:center; font-weight:600;" maxlength="2">
+                </div>
+
+                <input type="text" id="addName" data-i18n-ph="name_ph" placeholder="名称" style="width:100%; padding:15px; border-radius:10px; border:1px solid #ddd; margin-bottom:12px; outline:none; background:var(--bg); color:var(--text); font-weight:600;">
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:15px;">
+                    <div><small style="font-size:9px; opacity:0.5;" data-i18n="big_cup">大杯</small><input type="number" id="pBig" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; outline:none; background:var(--bg); color:var(--text); font-size:14px; text-align:left;"></div>
+                    <div><small style="font-size:9px; opacity:0.5;" data-i18n="small_cup">小杯</small><input type="number" id="pSmall" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; outline:none; background:var(--bg); color:var(--text); font-size:14px; text-align:left;"></div>
+                    <div><small style="font-size:9px; opacity:0.5;" data-i18n="mini_cup">最小杯</small><input type="number" id="pMini" placeholder="0.00" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; outline:none; background:var(--bg); color:var(--text); font-size:14px; text-align:left;"></div>
+                </div>
+                <button id="addBtn" onclick="window.addDrink()" style="width:100%; padding:20px; background:var(--text); color:var(--bg); border:none; border-radius:14px; font-weight:900;" data-i18n="sync">同步到云端</button>
+            </div>
+            <div id="adminDrinkList"></div>
+        </div>
+
+        <div class="nav-dock">
+            <div id="navIndicator" class="nav-indicator"></div>
+            <button class="nav-item active" onclick="window.switchTab(0, 'homePage', this)">
+                <svg viewBox="0 0 24 24">
+                    <path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z" />
+                </svg>
+                <span data-i18n="nav_home">点餐</span>
+            </button>
+            <button class="nav-item" onclick="window.switchTab(1, 'cartPage', this)">
+                <div id="cartBadge" class="badge" style="display:none">0</div>
+                <svg viewBox="0 0 24 24">
+                    <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
+                </svg>
+                <span data-i18n="nav_cart">购物车</span>
+            </button>
+            <button class="nav-item" onclick="window.switchTab(2, 'settingsPage', this)">
+                <svg viewBox="0 0 24 24">
+                    <path d="M19.14,12.94c.04-.3.06-.61.06-.94c0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74,9.31c-.12.21-.07.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58ZM12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6s3.6,1.62 3.6,3.6s-1.62,3.6-3.6,3.6Z" />
+                </svg>
+                <span data-i18n="nav_set">设置</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 🎨 统一控制通信与排版模块 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";  
+        import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";  
+        
+        const firebaseConfig = { apiKey: "AIzaSyBNk0S-ArNKrK_fmUZJb6K2U2252rT5FNU", projectId: "restaurant-app-bc3c1" };  
+        const app = initializeApp(firebaseConfig);  
+        const db = getFirestore(app);  
+        
+        // --- 声明前后台通用响应式状态 ---
+        window.currentLang = 'zh';  
+        window.timeFmt = '12h';  
+        window.dateFmt = 'YMD';  
+        window.cart = [];  
+        window.drinks = [];  
+        window.ordersData = [];  
+        window.curQty = 1;  
+        window.curSelectedPrice = 0;  
+        window.curDiningMode = "dine_in";  
+        window.currentTabIdx = 0;  
+        window.pendingItem = null;  
+        window.editPendingId = null;  
+        window.base64 = "";  
+        window.editBase64 = "";  
+        
+        // 🎨 自动滚动状态完全挂载至全局 window
+        window.autoScrollInterval = null;
+        window.scrollSpeed = 0;
+        window.lastClientY = 0;
+        window.activeDragItem = null;
+        window.lastSwapTime = 0; 
+        
+        window.I18N = {  
+            zh: { nav_home: "点餐", nav_cart: "购物车", nav_set: "设置", total: "总计", history: "历史记录 HISTORY", lang_set: "系统语言 LANGUAGE", theme_set: "主题模式 THEME", manage: "菜单管理 (增/删)", sync: "同步到云端", send: "发送订单", cancel: "取消", confirm: "确定", err_table: "请先输入桌号！", pop_sent: "订单发送成功", confirm_del: "确定从云端删除？", btn_ok: "确定", remark_ph: "备注...", normal: "正常", gau: "厚(Gau)", po: "薄(Po)", less_sugar: "少糖", no_sugar: "无糖", big_cup: "大杯", small_cup: "小杯", mini_cup: "最小杯", empty_cart: "购物车是空的", empty_hist: "暂无订单", added_to_cart: "已添加 %n", st_pending: "未完成", st_done: "已完成", remove: "移除", edit: "编辑", edit_title: "编辑饮品", add_success: "云端同步成功", select_file: "选择图片", table: "桌号 TABLE", search_ph: "搜索饮品...", name_ph: "名称", price_ph: "单价", time_fmt: "时间格式", date_fmt: "日期格式", manage_title: "管理云端菜单", auto: "自动", light: "亮色", dark: "深色", dine_in: "堂食", takeaway: "外带", dining_mode: "用餐方式", saved_success: "保存成功" },  
+            en: { nav_home: "MENU", nav_cart: "CART", nav_set: "SET", total: "TOTAL", history: "HISTORY", lang_set: "LANGUAGE", theme_set: "THEME MODE", manage: "MANAGE MENU", sync: "SYNC", send: "SEND", err_table: "Please enter table no.!", pop_sent: "Order Sent Successfully", confirm_del: "Delete from cloud?", confirm: "Confirm", cancel: "Cancel", btn_ok: "OK", remark_ph: "Remarks...", normal: "Normal", gau: "Gau", po: "Po", less_sugar: "Less Sugar", no_sugar: "No Sugar", big_cup: "Large", small_cup: "Small", mini_cup: "Mini", empty_cart: "Your cart is empty", empty_hist: "No orders yet", added_to_cart: "Added %n", st_pending: "PENDING", st_done: "DONE", remove: "REMOVE", edit: "EDIT", edit_title: "EDIT DRINK", add_success: "Sync Success", select_file: "SELECT IMAGE", table: "TABLE", search_ph: "Search...", name_ph: "Name", price_ph: "Unit Price", time_fmt: "TIME FORMAT", date_fmt: "DATE FORMAT", manage_title: "MANAGE CLOUD MENU", auto: "AUTO", light: "LIGHT", dark: "DARK", dine_in: "DINE-IN", takeaway: "TAKEAWAY", dining_mode: "DINING", saved_success: "Saved Successfully" }  
+        };  
+        
+        window.saveLocalOrders = (data) => localStorage.setItem('emp_sys_local_orders', JSON.stringify(data));
+        window.loadLocalOrders = () => JSON.parse(localStorage.getItem('emp_sys_local_orders') || '[]');
+        window.saveSet = (k, v) => localStorage.setItem('emp_sys_' + k, v);
+        window.loadSet = (k, def) => localStorage.getItem('emp_sys_' + k) || def;
+        
+        // --- 时间排版机制 ---
+        function formatTime(d) {
+            if(!d) return `--<span class="time-colon">:</span>--`;
+            let h = d.getHours(); const m = d.getMinutes().toString().padStart(2, '0');
+            const colon = `<span class="time-colon">:</span>`;
+            if(window.timeFmt === '24h') return `${h.toString().padStart(2, '0')}${colon}${m}`;
+            const sfx = h >= 12 ? " PM" : " AM"; h = h % 12 || 12;
+            return `${h.toString().padStart(2, '0')}${colon}${m}${sfx}`;
+        }
+        
+        window.updateClock = function() {
+            const now = new Date();
+            const clockEl = document.getElementById('liveClock');
+            if (clockEl) clockEl.innerHTML = formatTime(now);
+            const y = now.getFullYear(), mo = (now.getMonth()+1).toString().padStart(2, '0'), d = now.getDate().toString().padStart(2, '0');
+            const dateEl = document.getElementById('liveDate');
+            if (dateEl) dateEl.innerText = window.dateFmt === 'YMD' ? `${y}/${mo}/${d}` : `${d}/${mo}/${y}`;
+        };
+        setInterval(window.updateClock, 1000);
+        
+        // --- 底部卡片滑出项生成 ---
+        function createSwipeItem(title, price, meta, img, onDel, onAction = null, qty = 1, isDone = false, emoji = '🥤') {  
+            const container = document.createElement('div'); container.className = 'swipe-container';  
+            const label = isDone ? window.I18N[window.currentLang].st_done : window.I18N[window.currentLang].st_pending;
+            container.innerHTML = `<div class="swipe-del-btn" id="del">DELETE</div><div class="swipe-body ${isDone?'is-completed':''}" id="bdy"><div style="display:flex; align-items:center; flex:1; min-width:0;"><div class="drink-img" style="width:38px;height:38px;margin-right:10px;margin-bottom:0;flex-shrink:0;">${img ? `<img src="${img}">` : (emoji || '🥤')}</div><div class="swipe-info-box"><div style="font-size:10px; opacity:0.5;">${meta}</div><div class="swipe-title">${title} ${qty > 1 ? `<span style="background:#000; color:#fff; padding:2px 6px; border-radius:6px; font-size:10px;">x${qty}</span>` : ''}</div><div style="font-size:11px; font-weight:900;">RM ${price}</div></div></div>${onAction ? `<button class="status-btn" id="act">${label}</button>` : ''}</div>`;  
+            const body = container.querySelector('#bdy'); let startX = 0, isSwiped = false;
+            body.ontouchstart = e => { startX = e.touches[0].clientX; body.style.transition = 'none'; };
+            body.ontouchmove = e => { let move = (isSwiped ? -80 : 0) + (e.touches[0].clientX - startX); if (move > 0) move = 0; if (move < -80) move = -80; body.style.transform = `translateX(${move}px)`; };
+            body.ontouchend = () => { body.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)'; isSwiped = new WebKitCSSMatrix(window.getComputedStyle(body).transform).m41 < -40; body.style.transform = `translateX(${isSwiped ? -80 : 0}px)`; };
+            container.querySelector('#del').onclick = () => onDel();
+            if(onAction) container.querySelector('#act').onclick = () => onAction();
+            return container;  
+        }
+        
+        // --- 核心 UI 切换机制 ---
+        window.switchTab = function(idx, pageId, el = null, fromPopState = false) { 
+            const navButtons = document.querySelectorAll('.nav-dock .nav-item');
+            const targetEl = el || navButtons[idx];
+            if (!targetEl) return;
+            
+            if (idx === window.currentTabIdx && !fromPopState) return;
+            window.currentTabIdx = idx;
+            
+            const indicator = document.getElementById('navIndicator');
+            if (indicator) indicator.style.transform = `translateX(${idx * 100}%)`; 
+            
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) targetPage.classList.add('active'); 
+            
+            navButtons.forEach((btn, i) => {
+                btn.classList.toggle('active', i === idx);
+            });
+            document.querySelectorAll('.swipe-body').forEach(b => b.style.transform = 'translateX(0)'); 
+            if (!fromPopState) history.pushState({ tab: idx }, "");
+        };
+        
+        window.setOptUI = function(el, idx) { 
+            if(!el) return;
+            const parent = el.parentElement; const slider = parent.querySelector('.sw-slider'); const buttons = parent.querySelectorAll('.sw-btn');
+            const count = buttons.length; 
+            const numIdx = parseInt(idx); // 强制转换为数值，避免 "0" === 0 产生匹配漏洞
+            if (slider) {
+                slider.style.width = `calc(${100 / count}% - 8px)`; 
+                slider.style.left = `calc(${(numIdx * 100) / count}% + 4px)`; 
+            }
+            buttons.forEach((b, i) => b.classList.toggle('active', i === numIdx)); 
+        };
+        
+        window.setDiningUI = function(mode) {
+            window.curDiningMode = mode;
+            const btnDine = document.getElementById('btnDineIn');
+            const btnTake = document.getElementById('btnTakeaway');
+            if (btnDine) btnDine.classList.toggle('active', mode === 'dine_in');
+            if (btnTake) btnTake.classList.toggle('active', mode === 'takeaway');
+        };
+        
+        window.setLang = function(l, idx) {  
+            window.currentLang = l; window.saveSet('lang', l); window.saveSet('lang_idx', idx);
+            const langBtn = document.querySelectorAll('#langSwitch .sw-btn')[idx];
+            if(langBtn) window.setOptUI(langBtn, parseInt(idx));
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (window.I18N[l] && window.I18N[l][key]) el.innerText = window.I18N[l][key];
+            });  
+            document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+                const key = el.getAttribute('data-i18n-ph');
+                if (window.I18N[l] && window.I18N[l][key]) el.placeholder = window.I18N[l][key];
+            });  
+            document.querySelectorAll('.switcher').forEach(sw => { 
+                const act = sw.querySelector('.active'); 
+                if(act) { 
+                    const btns = Array.from(sw.querySelectorAll('.sw-btn')); 
+                    window.setOptUI(act, btns.indexOf(act)); 
+                } 
+            });
+            window.renderCart(); window.renderHistory(); window.filterMenu(); window.renderAdmin(); window.updateClock();
+        };
+        
+        window.setTimeFmt = function(f, i) { window.timeFmt = f; window.saveSet('timeFmt', f); window.saveSet('time_idx', i); window.setOptUI(document.querySelectorAll('#timeSwitch_ctrl .sw-btn')[i], i); window.updateClock(); window.renderHistory(); };
+        window.setDateFmt = function(f, i) { window.dateFmt = f; window.saveSet('dateFmt', f); window.saveSet('date_idx', i); window.setOptUI(document.querySelectorAll('#dateSwitch_ctrl .sw-btn')[i], i); window.updateClock(); window.renderHistory(); };
+        window.setTheme = function(m, i) { window.saveSet('theme', m); window.saveSet('theme_idx', i); window.setOptUI(document.querySelectorAll('#themeSwitch .sw-btn')[i], i); let actual = m === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : m; document.body.setAttribute('data-theme', actual); };
+        window.changeQty = function(d) { window.curQty = Math.max(1, window.curQty + d); const qtyEl = document.getElementById('qtyVal'); if (qtyEl) qtyEl.innerText = window.curQty; };
+        
+        window.openOpt = function(drink) { 
+            window.pendingItem = drink; window.curQty = 1; 
+            const nameEl = document.getElementById('optDrinkName');
+            const qtyEl = document.getElementById('qtyVal');
+            const remEl = document.getElementById('customRem');
+            if (nameEl) nameEl.innerText = drink.name; 
+            if (qtyEl) qtyEl.innerText = "1"; 
+            if (remEl) remEl.value = ""; 
+            window.setDiningUI('dine_in'); 
+            window.setOptUI(document.querySelectorAll('#tasteSwitch .sw-btn')[0], 0); 
+            window.setOptUI(document.querySelectorAll('#sugarSwitch .sw-btn')[0], 0); 
+            window.changeSize(document.querySelectorAll('#sizeSwitch .sw-btn')[1], 1); 
+            const modal = document.getElementById('optionModal');
+            if (modal) modal.classList.add('show'); 
+            document.body.classList.add('modal-open');
+            history.pushState({ type: 'option' }, "");
+        };
+        
+        window.closeOpt = function() { history.back(); };
+        window.toggleManage = function(s) {
+            const page = document.getElementById('managePage');
+            if (s) {
+                if (page) page.classList.add('show');
+                history.pushState({ type: 'manage' }, "");
+            } else {
+                history.back();
+            }
+        };
+        
+        // 🎨 原地层叠物理通知卡片堆叠动效
+        let activeToasts = [];
+        window.showToast = function(m) { 
+            const container = document.getElementById('toastContainer');
+            if(!container) return;
+            const t = document.createElement('div');
+            t.className = 'k-toast';
+            t.innerHTML = `<svg class="toast-check-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg><span>${m}</span>`;
+            container.appendChild(t);
+            activeToasts.unshift(t);
+            setTimeout(() => { window.updateToastStack(); }, 16);
+            setTimeout(() => {
+                t.classList.add('exit-up');
+                setTimeout(() => {
+                    t.remove();
+                    activeToasts = activeToasts.filter(el => el !== t);
+                    window.updateToastStack();
+                }, 320);
+            }, 2000);
+        };
+        
+        window.updateToastStack = function() {
+            activeToasts.forEach((t, idx) => {
+                t.classList.remove('stack-0', 'stack-1', 'stack-2');
+                if (idx === 0) t.classList.add('stack-0');
+                else if (idx === 1) t.classList.add('stack-1');
+                else if (idx === 2) t.classList.add('stack-2');
+                else {
+                    t.style.opacity = '0';
+                    setTimeout(() => t.remove(), 300);
+                }
+            });
+            activeToasts = activeToasts.filter(t => document.body.contains(t));
+        };
+        
+        // --- 拖拽自动滚动的重力感应逻辑 (全部挂载至全局 window，避免作用域隔离缺陷) ---
+        window.startAutoScroll = function(container, speed) {
+            window.scrollSpeed = speed;
+            if (window.autoScrollInterval) return; 
+            const scrollStep = () => {
+                if (window.scrollSpeed === 0) {
+                    window.stopAutoScroll();
+                    return;
+                }
+                container.scrollTop += window.scrollSpeed;
+                window.checkAndSwap(window.lastClientY);
+                window.autoScrollInterval = requestAnimationFrame(scrollStep);
+            };
+            window.autoScrollInterval = requestAnimationFrame(scrollStep);
+        };
+        
+        window.stopAutoScroll = function() {
+            if (window.autoScrollInterval) {
+                cancelAnimationFrame(window.autoScrollInterval);
+                window.autoScrollInterval = null;
+            }
+            window.scrollSpeed = 0;
+        };
+        
+        window.checkAndScroll = function(clientY, container) {
+            const threshold = 130; 
+            const screenHeight = window.innerHeight;
+            if (clientY < threshold) {
+                const speed = -15 * (1 - clientY / threshold);
+                window.startAutoScroll(container, speed);
+            } else if (clientY > screenHeight - threshold) {
+                const speed = 15 * ((clientY - (screenHeight - threshold)) / threshold);
+                window.startAutoScroll(container, speed);
+            } else {
+                window.stopAutoScroll();
+            }
+        };
+        
+        // 🎨 彻底根治滑动跑偏判定机制
+        window.checkAndSwap = function(clientY) {
+            // 加入一个 140ms 的交换节流防抖门阀，给予布局刷新充足的缓冲空间
+            const now = Date.now();
+            if (now - window.lastSwapTime < 140) return;
+        
+            const draggingEl = window.activeDragItem || document.querySelector('.admin-item.dragging');
+            if (!draggingEl) return;
+            
+            const list = document.getElementById('adminDrinkList');
+            const listRect = list.getBoundingClientRect();
+            
+            // 🎨 绝对物理对齐修正公式：clientY 与 listRect.top 直接作差就已经包含了滚动的所有位移，
+            // 移除了多余的 managePage.scrollTop 二次补偿漏洞后，无论滚动速度有多快，在拖拽测量中都绝对零偏差。
+            const relativeY = clientY - listRect.top;
+            
+            const listItems = [...list.querySelectorAll('.admin-item:not(.dragging)')];
+            
+            let nextNode = null;
+            for (const item of listItems) {
+                // 读取静态 offsetTop 坐标判定中点，它完全不受 translate 视觉动效位移的影响，判定坚如磐石
+                const middle = item.offsetTop + item.offsetHeight / 2;
+                if (relativeY < middle) {
+                    nextNode = item;
+                    break;
+                }
+            }
+            if (draggingEl.nextSibling !== nextNode) {
+                window.lastSwapTime = now; // 写入冷却时间戳
+                flip(list, () => {
+                    list.insertBefore(draggingEl, nextNode);
+                });
+            }
+        };
+        
+        // --- 手机视口触底渐显监听 ---
+        window.cardObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('revealed');
+                    entry.target.addEventListener('transitionend', () => {
+                        entry.target.style.transitionDelay = '0s';
+                    }, { once: true });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { root: null, rootMargin: '0px 0px -30px 0px', threshold: 0.05 });
+        
+        // --- 列表渲染逻辑 ---
+        window.filterMenu = () => { 
+            const k = document.getElementById('searchInp').value.toLowerCase(); const grid = document.getElementById('menuGrid'); grid.innerHTML = ''; 
+            const sortedDrinks = [...window.drinks].sort((a, b) => {
+                const orderA = a.sortOrder ?? 999999; const orderB = b.sortOrder ?? 999999;
+                if (orderA !== orderB) return orderA - orderB;
+                return a.id.localeCompare(b.id);
+            });
+        
+            const isLargeScreen = window.innerWidth >= 600;
+            const filtered = sortedDrinks.filter(d => d.name.toLowerCase().includes(k));
+        
+            if (isLargeScreen) {
+                const gridWidth = grid.clientWidth || window.innerWidth;
+                const cols = Math.floor((gridWidth + 12) / (115 + 12)) || 4; 
+        
+                filtered.forEach((d, index) => { 
+                    const card = document.createElement('div'); card.className = 'drink-card'; 
+                    const r = Math.floor(index / cols), c = index % cols, diagonalIndex = r + c;
+                    card.style.transitionDelay = `${diagonalIndex * 40}ms`;
+                    const pShow = d.pSmall || d.pBig || d.pMini || 0;
+                    card.innerHTML = `<div class="drink-img">${d.img ? `<img src="${d.img}">` : (d.emoji || '🥤')}</div><div style="font-weight: 800; font-size: 12px; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; height: 32px; overflow-wrap: break-word; word-break: normal; padding: 0 2px;">${d.name}</div><div style="font-size: 11px; font-weight: 900; color: var(--text); margin-top: 4px;">RM ${(parseFloat(pShow)).toFixed(2)}</div>`; 
+                    card.onclick = () => window.openOpt(d); grid.appendChild(card); 
+        
+                    requestAnimationFrame(() => {
+                        card.classList.add('revealed');
+                        card.addEventListener('transitionend', () => { card.style.transitionDelay = '0s'; }, { once: true });
+                    });
+                });
+            } else {
+                // 🎨 手机移动端：保持经典的视口滚动触底渐现
+                filtered.forEach((d, index) => { 
+                    const card = document.createElement('div'); card.className = 'drink-card'; 
+                    card.style.transitionDelay = `${(index % 12) * 35}ms`;
+                    const pShow = d.pSmall || d.pBig || d.pMini || 0;
+                    card.innerHTML = `<div class="drink-img">${d.img ? `<img src="${d.img}">` : (d.emoji || '🥤')}</div><div style="font-weight: 800; font-size: 12px; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; height: 32px; overflow-wrap: break-word; word-break: normal; padding: 0 2px;">${d.name}</div><div style="font-size: 11px; font-weight: 900; color: var(--text); margin-top: 4px;">RM ${(parseFloat(pShow)).toFixed(2)}</div>`; 
+                    card.onclick = () => window.openOpt(d); grid.appendChild(card); 
+                    window.cardObserver.observe(card); 
+                }); 
+            }
+        };
+        
+        window.changeSize = (el, idx) => {
+            window.setOptUI(el, idx);
+            if(idx === 0) window.curSelectedPrice = window.pendingItem.pBig || 0;
+            else if(idx === 1) window.curSelectedPrice = window.pendingItem.pSmall || 0;
+            else window.curSelectedPrice = window.pendingItem.pMini || 0;
+            const priceEl = document.getElementById('optPriceDisplay');
+            if (priceEl) priceEl.innerText = `RM ${parseFloat(window.curSelectedPrice).toFixed(2)}`;
+        };
+        
+        window.renderCart = () => { 
+            const list = document.getElementById('draftList'); if(!list) return; list.innerHTML = ''; 
+            const badge = document.getElementById('cartBadge'), summary = document.getElementById('cartSummary'); 
+            if(window.cart.length === 0) { list.innerHTML = `<div style="text-align:center; padding:30px; color:#999;">${window.I18N[window.currentLang].empty_cart}</div>`; badge.style.display='none'; summary.style.display='none'; return; } 
+            let total = 0, count = 0; 
+            window.cart.forEach((it, i) => { 
+                const sub = parseFloat(it.price) * it.qty; total += sub; count += it.qty; 
+                list.appendChild(createSwipeItem(`${it.name} ${it.displayMods}`, sub.toFixed(2), "", it.img, () => { window.cart.splice(i,1); window.renderCart(); }, null, it.qty, false, it.emoji)); 
+            }); 
+            badge.innerText = count; badge.style.display = 'block'; summary.style.display = 'flex'; 
+            document.getElementById('totalPriceDisplay').innerText = `RM ${total.toFixed(2)}`; 
+        };
+        
+        window.renderHistory = () => { 
+            const list = document.getElementById('historyList'); if(!list) return; list.innerHTML = ''; 
+            if(window.ordersData.length === 0) { list.innerHTML = `<div style="text-align:center; padding:30px; color:#999;">${window.I18N[window.currentLang].empty_hist}</div>`; return; } 
+            window.ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            window.ordersData.forEach((o, index) => { 
+                const dt = new Date(o.createdAt);
+                list.appendChild(createSwipeItem(o.displayStr, o.totalPrice, `T${o.table} | ${formatTime(dt)}`, null, () => { window.ordersData.splice(index, 1); window.saveLocalOrders(window.ordersData); window.renderHistory(); }, () => { window.ordersData[index].status = o.status === 'completed' ? 'pending' : 'completed'; window.saveLocalOrders(window.ordersData); window.renderHistory(); }, 1, o.status === 'completed')); 
+            }); 
+        };
+        
+        window.confirmAdd = () => {  
+            const tK = document.querySelector('#tasteSwitch .active').innerText, sK = document.querySelector('#sugarSwitch .active').innerText, zK = document.querySelector('#sizeSwitch .active').innerText, r = document.getElementById('customRem').value.trim();  
+            const mods = [ (window.curDiningMode === 'takeaway' ? window.I18N[window.currentLang].takeaway : ''), tK==="正常"||tK==="Normal"?'':tK, sK==="正常"||sK==="Normal"?'':sK, zK==="小杯"||zK==="Small"?'':zK].filter(v=>v!=='');  
+            const ds = mods.length > 0 ? `(${mods.join('/')}${r ? ', ' + r : ''})` : (r ? `(${r})` : '');  
+            const existing = window.cart.find(item => item.name === window.pendingItem.name && item.displayMods === ds);
+            if (existing) { existing.qty += window.curQty; } else { window.cart.push({ ...window.pendingItem, price: window.curSelectedPrice, displayMods: ds, qty: window.curQty }); }
+            window.showToast(window.I18N[window.currentLang].added_to_cart.replace('%n', window.pendingItem.name)); window.renderCart(); window.closeOpt(); 
+        };
+        
+        // --- 数据库操作逻辑 ---
+        window.submitOrder = async () => { 
+            const t = document.getElementById('tableNum').value; 
+            if(!t) return window.showPop(window.I18N[window.currentLang].err_table, null, false, true); 
+            const ds = window.cart.map(it => `${it.name}${it.qty>1?'x'+it.qty:''} ${it.displayMods}`).join(', '); 
+            const priceVal = document.getElementById('totalPriceDisplay').innerText.replace('RM ','');
+            await addDoc(collection(db, "orders"), { table: t, displayStr: ds, totalPrice: priceVal, status: 'pending', createdAt: serverTimestamp() }); 
+            const localOrder = { id: Date.now().toString(), table: t, displayStr: ds, totalPrice: priceVal, status: 'pending', createdAt: new Date().toISOString() };
+            window.ordersData.unshift(localOrder); window.saveLocalOrders(window.ordersData);
+            window.showPop(window.I18N[window.currentLang].pop_sent, null, true); 
+            window.cart = []; window.renderCart(); document.getElementById('tableNum').value = ''; window.renderHistory();
+        };
+        
+        window.addDrink = async () => { 
+            const n = document.getElementById('addName').value, pb = document.getElementById('pBig').value, ps = document.getElementById('pSmall').value, pm = document.getElementById('pMini').value;
+            const emoji = document.getElementById('addEmoji').value.trim() || "🥤";
+            if(!n) return; const addBtn = document.getElementById('addBtn'); addBtn.innerText = "WAIT..."; addBtn.disabled = true;
+            try { await addDoc(collection(db, "drinks"), { name: n, pBig: parseFloat(pb)||0, pSmall: parseFloat(ps)||0, pMini: parseFloat(pm)||0, img: window.base64, emoji: emoji, sortOrder: window.drinks.length, createdAt: serverTimestamp() }); document.getElementById('addName').value = ''; document.getElementById('pBig').value = ''; document.getElementById('pSmall').value = ''; document.getElementById('pMini').value = ''; document.getElementById('addEmoji').value = ''; window.base64 = ""; document.getElementById('fileLabel').innerText = "选择图片"; window.showPop(window.I18N[window.currentLang].add_success, null, true); } catch (e) { alert("Error!"); } finally { addBtn.innerText = window.I18N[window.currentLang].sync; addBtn.disabled = false; }
+        };
+        
+        window.saveEditDrink = async () => {
+            if(!window.editPendingId) return;
+            const name = document.getElementById('editName').value.trim();
+            if(!name) return;
+            const pb = document.getElementById('editPBig').value;
+            const ps = document.getElementById('editPSmall').value;
+            const pm = document.getElementById('editPMini').value;
+            const emoji = document.getElementById('editEmoji').value.trim() || "🥤";
+            
+            const saveBtn = document.getElementById('saveEditBtn');
+            saveBtn.innerText = "WAIT..."; saveBtn.disabled = true;
+            try {
+                await updateDoc(doc(db, "drinks", window.editPendingId), { name: name, pBig: parseFloat(pb) || 0, pSmall: parseFloat(ps) || 0, pMini: parseFloat(pm) || 0, img: window.editBase64, emoji: emoji });
+                window.closeEdit(); window.showToast(window.I18N[window.currentLang].saved_success);
+            } catch (e) { alert("Error: " + e.message); } finally { saveBtn.innerText = window.I18N[window.currentLang].confirm; saveBtn.disabled = false; }
+        };
+        
+        window.handleDeleteDrink = (id) => window.showPop(window.I18N[window.currentLang].confirm_del, () => deleteDoc(doc(db, 'drinks', id)));  
+        
+        window.renderAdmin = () => { 
+            const list = document.getElementById('adminDrinkList'); if(!list) return; list.innerHTML = ''; 
+            const sortedDrinks = [...window.drinks].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+            sortedDrinks.forEach((d, i) => { 
+                const el = document.createElement('div'); el.className = 'admin-item'; el.dataset.id = d.id; el.draggable = true;
+                el.innerHTML = `<div class="drag-handle">☰</div><div class="drink-img" style="width:40px;height:40px;margin-bottom:0;">${d.img ? `<img src="${d.img}">` : (d.emoji || '🥤')}</div><div class="admin-info"><b>${d.name}</b><br><small style="opacity:0.5; font-size:9px;">B:${d.pBig||0}/S:${d.pSmall||0}/M:${d.pMini||0}</small></div><div class="m-action-row"><div class="edit-x-btn" onclick="window.handleEditDrink('${d.id}')"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"></path></svg></div><div class="del-x-btn" onclick="window.handleDeleteDrink('${d.id}')"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></div></div>`; 
+                
+                // 拖拽支持
+                el.ondragstart = (e) => { e.dataTransfer.setData('text/plain', d.id); window.activeDragItem = el; setTimeout(() => { el.classList.add('dragging'); }, 0); };
+                el.ondragend = () => { if(window.stopAutoScroll) window.stopAutoScroll(); el.classList.remove('dragging'); window.activeDragItem = null; };
+                
+                let startY = 0, isDraggingStarted = false;
+                el.ontouchstart = (e) => { if (e.target.classList.contains('drag-handle')) { window.activeDragItem = el; startY = e.touches[0].clientY; isDraggingStarted = false; e.preventDefault(); } };
+                el.ontouchmove = (e) => {
+                    if (!window.activeDragItem) return; const touch = e.touches[0]; const deltaY = Math.abs(touch.clientY - startY);
+                    if (!isDraggingStarted) { if (deltaY > 8) { isDraggingStarted = true; window.activeDragItem.classList.add('dragging'); if (navigator.vibrate) navigator.vibrate(10); } else return; }
+                    e.preventDefault(); window.lastClientY = touch.clientY;
+                    const manageContainer = document.getElementById('managePage');
+                    if (window.checkAndScroll) window.checkAndScroll(window.lastClientY, manageContainer); 
+                    if (window.checkAndSwap) window.checkAndSwap(window.lastClientY);
+                };
+                el.ontouchend = async () => { if (!window.activeDragItem) return; window.activeDragItem.classList.remove('dragging'); window.activeDragItem = null; isDraggingStarted = false; await window.saveNewMenuOrder(); };
+                list.appendChild(el); 
+            }); 
+            
+            list.ondragover = (e) => { e.preventDefault(); const draggingEl = list.querySelector('.dragging'); if (!draggingEl) return; window.lastClientY = e.clientY; const manageContainer = document.getElementById('managePage'); if(window.checkAndScroll) window.checkAndScroll(window.lastClientY, manageContainer); if(window.checkAndSwap) window.checkAndSwap(window.lastClientY); };
+            list.ondrop = async (e) => { e.preventDefault(); await window.saveNewMenuOrder(); };
+        };
+        
+        window.handleEditDrink = (id) => {
+            const drink = window.drinks.find(d => d.id === id);
+            if (!drink) return;
+            window.editPendingId = id;
+            window.editBase64 = drink.img || "";
+            document.getElementById('editName').value = drink.name;
+            document.getElementById('editPBig').value = drink.pBig || "";
+            document.getElementById('editPSmall').value = drink.pSmall || "";
+            document.getElementById('editPMini').value = drink.pMini || "";
+            document.getElementById('editEmoji').value = drink.emoji || "🥤";
+            
+            const logoImg = document.getElementById('editLogoImg');
+            const logoPh = document.getElementById('editLogoPlaceholder');
+            if (drink.img) {
+                if (logoImg) { logoImg.src = drink.img; logoImg.style.display = "block"; }
+                if (logoPh) logoPh.style.display = "none";
+                document.getElementById('editFileLabel').innerText = "READY";
+            } else {
+                if (logoImg) { logoImg.src = ""; logoImg.style.display = "none"; }
+                if (logoPh) logoPh.style.display = "flex";
+                document.getElementById('editFileLabel').innerText = window.I18N[window.currentLang].select_file;
+            }
+            const modal = document.getElementById('editModal');
+            if (modal) modal.classList.add('show');
+            document.body.classList.add('modal-open');
+            history.pushState({ type: 'edit' }, "");
+        };
+        
+        window.closeEdit = () => { history.back(); };
+        
+        // FLIP 流体过渡算法
+        function flip(parent, action) {
+            const kids = Array.from(parent.children);
+            const firstPositions = kids.map(el => {
+                const rect = el.getBoundingClientRect();
+                return { top: rect.top, left: rect.left };
+            });
+            action(); 
+            kids.forEach((el, index) => {
+                const rect = el.getBoundingClientRect();
+                const lastPosition = { top: rect.top, left: rect.left };
+                const invertTop = firstPositions[index].top - lastPosition.top;
+                const invertLeft = firstPositions[index].left - lastPosition.left;
+                if (invertTop !== 0 || invertLeft !== 0) {
+                    el.style.transition = 'none';
+                    el.style.transform = `translate(${invertLeft}px, ${invertTop}px)`;
+                    el.getBoundingClientRect(); 
+                    el.style.transition = 'transform 0.22s cubic-bezier(0.25, 1, 0.5, 1)';
+                    el.style.transform = '';
+                }
+            });
+        }
+        
+        // --- 全局基础提示框 ---
+        window.showPop = function(m, callback, isSuccess = false, isWarning = false) {
+            const ov = document.getElementById('modalOverlay'); 
+            const msg = document.getElementById('modalMsg'); 
+            const btns = document.getElementById('modalBtns'); 
+            const iconArea = document.getElementById('modalIconArea'); 
+            const warnSlot = document.getElementById('warnIconSlot');
+            if (ov) ov.classList.add('show'); 
+            if (btns) btns.innerHTML = ""; 
+            if (iconArea) iconArea.innerHTML = ""; 
+            if (warnSlot) warnSlot.innerHTML = "";
+            document.body.classList.add('modal-open');
+            history.pushState({ type: 'pop' }, "");
+        
+            if(isSuccess && iconArea) {
+                iconArea.innerHTML = `<svg style="width:70px;height:70px;" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="none" stroke="var(--success)" stroke-width="5"/><path d="M30 50 L45 65 L70 35" fill="none" stroke="var(--success)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray:100; stroke-dashoffset:100; animation: drawCheck 0.6s ease-in-out forwards;"/></svg><style>@keyframes drawCheck{to{stroke-dashoffset:0}}</style>`;
+            } else if(isWarning && warnSlot) {
+                warnSlot.innerHTML = `<svg viewBox="0 0 100 100" style="width:22px;height:22px;fill:var(--warning);display:block;"><path d="M50 15 L90 85 L10 85 Z" fill="none" stroke="var(--warning)" stroke-width="8" stroke-linejoin="round"/><rect x="46" y="42" width="8" height="22" fill="var(--warning)" rx="2"/><circle cx="50" cy="74" r="4" fill="var(--warning)"/></svg>`;
+            }
+            if (msg) msg.innerText = m;
+        
+            if(callback && btns) {
+                btns.innerHTML = `<button class="m-btn m-btn-gray" id="pCancel">${window.I18N[window.currentLang].cancel}</button><button class="m-btn m-btn-black" id="pOk">${window.I18N[window.currentLang].confirm}</button>`;
+                document.getElementById('pCancel').onclick = () => { history.back(); };
+                document.getElementById('pOk').onclick = () => { history.back(); setTimeout(callback, 280); };
+            } else if (btns) {
+                btns.innerHTML = `<button class="m-btn m-btn-black" style="width:100%" id="pOk">${window.I18N[window.currentLang].btn_ok}</button>`;
+                document.getElementById('pOk').onclick = () => { history.back(); };
+            }
+        };
+        
+        window.addEventListener('popstate', (e) => {
+            const modalOverlay = document.getElementById('modalOverlay');
+            const editModal = document.getElementById('editModal');
+            const optionModal = document.getElementById('optionModal');
+            const managePage = document.getElementById('managePage');
+        
+            if (modalOverlay && modalOverlay.classList.contains('show')) {
+                modalOverlay.classList.remove('show');
+                document.body.classList.remove('modal-open');
+                return;
+            } 
+            if (editModal && editModal.classList.contains('show')) {
+                editModal.classList.remove('show');
+                document.body.classList.remove('modal-open');
+                return;
+            } 
+            if (optionModal && optionModal.classList.contains('show')) {
+                optionModal.classList.remove('show');
+                document.body.classList.remove('modal-open');
+                return;
+            } 
+            if (managePage && managePage.classList.contains('show')) {
+                managePage.classList.remove('show');
+                window.switchTab(2, 'settingsPage', null, true);
+                return;
+            }
+        
+            if (e.state && typeof e.state.tab !== 'undefined') {
+                const pages = ['homePage', 'cartPage', 'settingsPage'];
+                window.switchTab(e.state.tab, pages[e.state.tab], null, true);
+            } else {
+                window.switchTab(0, 'homePage', null, true);
+            }
+        });
+        
+        window.addEventListener('mouseup', () => { if (window.stopAutoScroll) window.stopAutoScroll(); });
+        window.addEventListener('touchend', () => { if (window.stopAutoScroll) window.stopAutoScroll(); });
+        
+        const compressImage = (file) => { return new Promise((resolve) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = (e) => { const img = new Image(); img.src = e.target.result; img.onload = () => { const canvas = document.createElement('canvas'); const MAX_WIDTH = 400; let width = img.width, height = img.height; if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg', 0.7)); }; }; }); };
+        document.getElementById('fileInp').onchange = async (e) => { if(e.target.files[0]) { window.base64 = await compressImage(e.target.files[0]); document.getElementById('fileLabel').innerText = "READY"; } };  
+        document.getElementById('editFileInp').onchange = async (e) => { 
+            if(e.target.files[0]) { 
+                window.editBase64 = await compressImage(e.target.files[0]); document.getElementById('editFileLabel').innerText = "READY"; 
+                const logoImg = document.getElementById('editLogoImg');
+                const logoPh = document.getElementById('editLogoPlaceholder');
+                if (logoImg) { logoImg.src = window.editBase64; logoImg.style.display = "block"; }
+                if (logoPh) logoPh.style.display = "none";
+            } 
+        };  
+        
+        // --- 全局初始化 ---
+        function init() {
+            onSnapshot(query(collection(db, "drinks")), snap => { 
+                window.drinks = []; 
+                snap.forEach(d => window.drinks.push({id: d.id, ...d.data()})); 
+                window.filterMenu(); window.renderAdmin(); 
+            });  
+            window.ordersData = window.loadLocalOrders(); window.renderHistory();
+            
+            // 🎨 使用 parseInt() 强制对 localStorage 的索引缓存做数值转换，消除 strict "0" === 0 造成的滑块位移偏离和按钮置空
+            window.setLang(window.loadSet('lang', 'zh'), parseInt(window.loadSet('lang_idx', 0)));
+            window.setTimeFmt(window.loadSet('timeFmt', '12h'), parseInt(window.loadSet('time_idx', 0)));
+            window.setDateFmt(window.loadSet('dateFmt', 'YMD'), parseInt(window.loadSet('date_idx', 0)));
+            window.setTheme(window.loadSet('theme', 'auto'), parseInt(window.loadSet('theme_idx', 0)));
+        }
+        
+        init();
+    </script>
+</body>
+
+</html>
